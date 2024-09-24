@@ -1,461 +1,478 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
 
-namespace ConsoleApp1
+namespace TextRPG
 {
     internal class Program
     {
+        static Player player = new Player("플레이어", "모험가"); // 기본 캐릭터 생성
+        static Shop shop = new Shop(); // 상점 생성
+
         static void Main(string[] args)
         {
-            StartGame();
+            StartGame(); // 게임 시작
         }
 
         static void StartGame()
         {
-            bool gameRunning = true;
+            bool gameRunning = true; // 게임이 실행 중인지 확인하는 플래그
 
             while (gameRunning)
             {
-                Console.Clear();
-                Console.WriteLine("\n==== Text RPG ====");
-                Console.WriteLine("1. 스테이터스");
-                Console.WriteLine("2. 인벤토리");
-                Console.WriteLine("3. 상점 가기");
-                Console.WriteLine("4. 종료");
-                Console.Write("원하는 행동을 선택하세요): ");
-                string choice = Console.ReadLine();
+                Console.Clear(); // 화면 지우기
+                Console.WriteLine("\n==== 텍스트 RPG ====");
+                Console.WriteLine("1. 던전");
+                Console.WriteLine("2. 상태 보기");
+                Console.WriteLine("3. 인벤토리");
+                Console.WriteLine("4. 상점");
+                Console.WriteLine("0. 게임 종료");
+                Console.Write("\n선택지를 입력하세요: ");
+
+                string choice = Console.ReadLine() ?? string.Empty; // 사용자 입력 받기
 
                 switch (choice)
                 {
                     case "1":
-                        ShowStatus();
+                        EnterDungeon();
                         break;
                     case "2":
-                        ManageInventory();
+                        ShowStatus();
                         break;
                     case "3":
-                        VisitShop();
+                        ManageInventory();
                         break;
                     case "4":
+                        VisitShop();
+                        break;
+                    case "0":
                         Console.WriteLine("게임을 종료합니다.");
                         gameRunning = false;
+                        break;
+                    default:
+                        Console.WriteLine("잘못된 입력입니다. 다시 시도하세요.");
+                        break;
+                }
+            }
+        }
+
+        // 던전 탐험 선택지
+        static void EnterDungeon()
+        {
+            Console.Clear();
+            Console.WriteLine("던전에 들어갔습니다! 아직 구현 중입니다.");
+            Console.WriteLine("\n계속하려면 Enter 키를 누르세요...");
+            Console.ReadLine();
+        }
+
+        // 상태 보기 선택지
+        static void ShowStatus()
+        {
+            Console.Clear();
+            Console.WriteLine("==== [ 캐릭터 상태 ] ====");
+            player.DisplayStatus(); // 캐릭터 상태 출력
+            Console.WriteLine("\n계속하려면 아무 키나 누르세요...");
+            Console.ReadKey(); // 상태 보기에서만 사용
+        }
+
+        // 인벤토리 관리 선택지
+        // 인벤토리 관리 선택지
+        // 인벤토리 관리 선택지
+        static void ManageInventory()
+        {
+            bool inInventory = true; // 인벤토리 관리 중인지 확인하는 플래그
+
+            while (inInventory)
+            {
+                Console.Clear();
+                Console.WriteLine("==== [ 인벤토리 ] ====");
+
+                // 인벤토리가 비었는지 확인
+                if (player.InventoryCount == 0)
+                {
+                    Console.WriteLine("아무것도 없는 상태입니다.");
+                    Console.WriteLine("0. 나가기");
+                    Console.Write("\n선택지를 입력하세요: ");
+                    string input = Console.ReadLine() ?? string.Empty;
+
+                    // 0을 입력하면 인벤토리 종료
+                    if (input == "0")
+                    {
+                        inInventory = false;
+                    }
+                }
+                else
+                {
+                    // 인벤토리에 있는 아이템 출력 (장착된 아이템은 [E] 표시)
+                    for (int i = 0; i < player.InventoryCount; i++)
+                    {
+                        string equippedIndicator = player.Inventory[i].IsEquipped ? "[E] " : "";
+                        Console.WriteLine($"{i + 1}. {equippedIndicator}{player.Inventory[i].Name} - {player.Inventory[i].Description}");
+                    }
+
+                    Console.WriteLine("\n장착할 아이템 번호를 입력하세요 (0. 나가기): ");
+                    string input = Console.ReadLine() ?? string.Empty;
+
+                    if (int.TryParse(input, out int itemNumber) && itemNumber > 0 && itemNumber <= player.InventoryCount)
+                    {
+                        Item selectedItem = player.Inventory[itemNumber - 1];
+
+                        if (selectedItem.Type == ItemType.Weapon || selectedItem.Type == ItemType.Armor)
+                        {
+                            // 이미 장착된 아이템이 있는 경우 해제
+                            if (selectedItem.IsEquipped)
+                            {
+                                player.UnequipItem(selectedItem); // 장비 해제 함수 호출
+                                Console.WriteLine($"{selectedItem.Name}을(를) 해제했습니다.");
+                            }
+                            else
+                            {
+                                player.EquipItem(selectedItem); // 장비 장착 함수 호출
+                                Console.WriteLine($"{selectedItem.Name}을(를) 장착했습니다.");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("이 아이템은 장착할 수 없습니다.");
+                        }
+                    }
+                    else if (itemNumber == 0)
+                    {
+                        Console.WriteLine("인벤토리에서 나갑니다.");
+                        inInventory = false; // 인벤토리 종료
+                    }
+                    else
+                    {
+                        Console.WriteLine("잘못된 입력입니다.");
+                    }
+                }
+            }
+        }
+
+
+
+        // 상점 방문 선택지
+        static void VisitShop()
+        {
+            shop.ShowShop(player); // 상점 출력
+        }
+    }
+
+    // 아이템 클래스
+    class Item
+    {
+        public string Name { get; set; } // 아이템 이름
+        public string Description { get; set; } // 아이템 설명
+        public bool IsPurchased { get; set; } = false; // 구매 여부
+        public bool IsEquipped { get; set; } = false; // 장착 여부
+        public int Price { get; set; } // 아이템 가격
+        public string Effect { get; set; } // 아이템 효과 (공격력/방어력 +)
+        public ItemType Type { get; set; } // 아이템 타입 (무기, 방어구 등)
+
+        // 생성자
+        public Item(string name, string effect, string description, int price, ItemType type)
+        {
+            Name = name;
+            Effect = effect;
+            Description = description;
+            Price = price;
+            Type = type;
+        }
+
+        // 아이템 정보 출력 (구매 여부 확인)
+        public override string ToString()
+        {
+            return IsPurchased ? $"{Name} | {Effect} | {Description} | 구매완료" : $"{Name} | {Effect} | {Description} | {Price} G";
+        }
+    }
+
+    // 플레이어 클래스
+    class Player
+    {
+        public string Name { get; set; } // 이름
+        public string Job { get; set; }  // 직업
+        public int Level { get; set; } = 1; // 기본 레벨
+        public int Attack { get; set; } = 10; // 기본 공격력
+        public int Defense { get; set; } = 5; // 기본 방어력
+        public int MaxHealth { get; set; } = 100; // 최대 체력
+        public int CurrentHealth { get; set; } = 100; // 현재 체력
+        public int Gold { get; set; } = 8000; // 기본 소지금
+
+        public Item? EquippedWeapon { get; set; } // 장착된 무기
+        public Item? EquippedArmor { get; set; }  // 장착된 방어구
+
+        public Item[] Inventory { get; private set; } // 아이템 배열
+        public int InventoryCount { get; private set; } = 0; // 인벤토리 내 아이템 수
+
+        // 생성자
+        public Player(string name, string job)
+        {
+            Name = name;
+            Job = job;
+            Inventory = new Item[10]; // 최대 10개의 아이템 보유 가능
+        }
+
+        // 인벤토리에 아이템 추가
+        public void AddItem(Item item)
+        {
+            if (InventoryCount < Inventory.Length)
+            {
+                Inventory[InventoryCount] = item;
+                InventoryCount++;
+            }
+            else
+            {
+                Console.WriteLine("인벤토리가 가득 찼습니다.");
+            }
+        }
+
+        // 장비 장착 함수
+        public void EquipItem(Item item)
+        {
+            if (item.Type == ItemType.Weapon)
+            {
+                // 기존 무기 해제
+                if (EquippedWeapon != null)
+                {
+                    EquippedWeapon.IsEquipped = false;
+                    Attack -= GetItemEffect(EquippedWeapon); // 이전 무기의 효과 제거
+                    Console.WriteLine($"{EquippedWeapon.Name}을(를) 해제했습니다.");
+                }
+
+                // 새로운 무기 장착
+                EquippedWeapon = item;
+                item.IsEquipped = true;
+                Attack += GetItemEffect(item); // 새로운 무기의 효과 추가
+            }
+            else if (item.Type == ItemType.Armor)
+            {
+                // 기존 방어구 해제
+                if (EquippedArmor != null)
+                {
+                    EquippedArmor.IsEquipped = false;
+                    Defense -= GetItemEffect(EquippedArmor); // 이전 방어구의 효과 제거
+                    Console.WriteLine($"{EquippedArmor.Name}을(를) 해제했습니다.");
+                }
+
+                // 새로운 방어구 장착
+                EquippedArmor = item;
+                item.IsEquipped = true;
+                Defense += GetItemEffect(item); // 새로운 방어구의 효과 추가
+            }
+        }
+
+        // 아이템의 효과를 반환하는 메서드
+        private int GetItemEffect(Item item)
+        {
+            if (item.Effect.StartsWith("공격력 +"))
+            {
+                return int.Parse(item.Effect.Split('+')[1]);
+            }
+            else if (item.Effect.StartsWith("방어력 +"))
+            {
+                return int.Parse(item.Effect.Split('+')[1]);
+            }
+            return 0;
+        }
+
+        // 장비 해제 함수
+        public void UnequipItem(Item item)
+        {
+            if (item.IsEquipped)
+            {
+                if (item == EquippedWeapon)
+                {
+                    Attack -= GetItemEffect(item); // 장비 해제 시 효과 감소
+                    EquippedWeapon = null;
+                }
+                else if (item == EquippedArmor)
+                {
+                    Defense -= GetItemEffect(item); // 장비 해제 시 효과 감소
+                    EquippedArmor = null;
+                }
+
+                item.IsEquipped = false; // 장비 해제 상태로 변경
+                Console.WriteLine($"{item.Name}을(를) 해제했습니다.");
+            }
+        }
+
+        // 캐릭터 상태 출력
+        public void DisplayStatus()
+        {
+            Console.WriteLine($"이름       : {Name}");
+            Console.WriteLine($"직업       : {Job}");
+            Console.WriteLine($"레벨       : {Level}");
+            Console.WriteLine($"공격력     : {Attack}");
+            Console.WriteLine($"방어력     : {Defense}");
+            Console.WriteLine($"체력       : {CurrentHealth}/{MaxHealth}");
+            Console.WriteLine($"Gold       : {Gold}");
+        }
+
+        // 인벤토리에서 아이템 제거 함수
+        public void RemoveItem(Item item)
+        {
+            for (int i = 0; i < InventoryCount; i++)
+            {
+                if (Inventory[i] == item)
+                {
+                    // 아이템을 인벤토리에서 제거
+                    for (int j = i; j < InventoryCount - 1; j++)
+                    {
+                        Inventory[j] = Inventory[j + 1];
+                    }
+                    InventoryCount--;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 상점 클래스
+    class Shop
+    {
+        private Item[] shopItems; // 상점에서 판매하는 아이템 목록
+
+        // 생성자
+        public Shop()
+        {
+            shopItems = new Item[]
+            {
+                new Item("수련자 갑옷", "방어력 +5", "수련에 도움을 주는 갑옷입니다.", 1000, ItemType.Armor),
+                new Item("무쇠갑옷", "방어력 +9", "무쇠로 만들어져 튼튼한 갑옷입니다.", 1500, ItemType.Armor),
+                new Item("스파르타의 갑옷", "방어력 +15", "스파르타의 전사들이 사용했다는 전설의 갑옷입니다.", 3500, ItemType.Armor),
+                new Item("낡은 검", "공격력 +2", "쉽게 볼 수 있는 낡은 검 입니다.", 600, ItemType.Weapon),
+                new Item("청동 도끼", "공격력 +5", "어디선가 사용됐던 거 같은 도끼입니다.", 1500, ItemType.Weapon),
+                new Item("스파르타의 창", "공격력 +7", "스파르타의 전사들이 사용했다는 전설의 창입니다.", 3000, ItemType.Weapon)
+            };
+        }
+
+        // 상점 출력
+        public void ShowShop(Player player)
+        {
+            bool inShop = true;
+            while (inShop)
+            {
+                Console.Clear();
+                Console.WriteLine("주인: 어서오세요. 상점24 입니다.");
+                Console.WriteLine("\n1. 아이템 구매");
+                Console.WriteLine("2. 아이템 판매");
+                Console.WriteLine("0. 나가기");
+                Console.Write("\n원하시는 행동을 입력해주세요: ");
+                string choice = Console.ReadLine() ?? string.Empty;
+
+                switch (choice)
+                {
+                    case "1":
+                        BuyItem(player);  // 아이템 구매 기능으로 이동
+                        break;
+                    case "2":
+                        SellItem(player);  // 아이템 판매 기능으로 이동
+                        break;
+                    case "0":
+                        inShop = false;
                         break;
                     default:
                         Console.WriteLine("잘못된 입력입니다.");
                         break;
                 }
-
-                Console.WriteLine();
             }
         }
 
-        /*-----------------------------------------------상태보기-------------------------------------------------------------*/
-        class Player
-        {
-            public string Name { get; set; }
-            public string Job { get; set; }
-            public int Level { get; set; } = 1;
-            public float Attack { get; set; } = 10;
-            public float Defense { get; set; } = 5;
-            public int Health { get; set; } = 100;
-            public int MaxHealth { get; set; } = 100;
-            public int Gold { get; set; } = 300;
-
-            public Item EquippedWeapon { get; set; }
-            public Item EquippedArmor { get; set; }
-            public Item EquippedAccessory { get; set; } // 보조장비 슬롯 추가
-
-            public void ShowStatus()
-            {
-                Console.WriteLine($"이름 : {Name}");
-                Console.WriteLine($"직업 : {Job}");
-                Console.WriteLine($"레벨 : {Level}");
-                Console.WriteLine($"공격력 : {Attack}");
-                Console.WriteLine($"방어력 : {Defense}");
-                Console.WriteLine($"체력 : {Health}/{MaxHealth}");
-                Console.WriteLine($"Gold : {Gold}");
-                Console.WriteLine($"무기 : {EquippedWeapon?.Name ?? "없음"}");
-                Console.WriteLine($"방어구 : {EquippedArmor?.Name ?? "없음"}");
-                Console.WriteLine($"보조장비: {EquippedAccessory?.Name ?? "없음"}"); // 보조장비 표시
-            }
-
-            public void EquipItem(Item item)
-            {
-                if (item.Type == ItemType.Weapon)
-                {
-                    if (EquippedWeapon != null)
-                    {
-                        UnequipItem(EquippedWeapon); // 기존 무기 해제
-                    }
-
-                    // 무기 장착
-                    if (item.WeaponType == WeaponType.TwoHanded && EquippedAccessory != null)
-                    {
-                        UnequipItem(EquippedAccessory); // 양손검일 경우 보조장비 해제
-                    }
-
-                    EquippedWeapon = item;
-                    Attack += item.BonusAttack;
-                    Console.WriteLine($"{item.Name}을(를) 장착했습니다. (무기)");
-                }
-                else if (item.Type == ItemType.Armor)
-                {
-                    if (EquippedArmor != null)
-                    {
-                        UnequipItem(EquippedArmor); // 기존 방어구 해제
-                    }
-                    EquippedArmor = item;
-                    Defense += item.BonusDefense;
-                    MaxHealth += item.BonusHealth;
-                    Console.WriteLine($"{item.Name}을(를) 장착했습니다. (방어구)");
-                }
-                else if (item.Type == ItemType.Accessory)
-                {
-                    // 보조장비는 한손검일 때만 가능
-                    if (EquippedWeapon?.WeaponType == WeaponType.TwoHanded)
-                    {
-                        Console.WriteLine("양손검 장착 중에는 보조장비를 장착할 수 없습니다. 무기가 해제됩니다.");
-                        UnequipItem(EquippedWeapon); // 양손검 해제
-                    }
-
-                    if (EquippedAccessory != null)
-                    {
-                        UnequipItem(EquippedAccessory); // 기존 보조장비 해제
-                    }
-                    EquippedAccessory = item;
-                    Defense += item.BonusDefense; // 보조장비는 방어력 증가
-                    Console.WriteLine($"{item.Name}을(를) 장착했습니다. (보조장비)");
-                }
-
-                item.IsEquipped = true;
-            }
-
-            public void UnequipItem(Item item)
-            {
-                if (item.IsEquipped)
-                {
-                    if (item.Type == ItemType.Weapon)
-                    {
-                        Attack -= item.BonusAttack;
-                        EquippedWeapon = null;
-                    }
-                    else if (item.Type == ItemType.Armor)
-                    {
-                        Defense -= item.BonusDefense;
-                        MaxHealth -= item.BonusHealth;
-                        if (Health > MaxHealth) Health = MaxHealth;
-                        EquippedArmor = null;
-                    }
-                    else if (item.Type == ItemType.Accessory)
-                    {
-                        Defense -= item.BonusDefense;
-                        EquippedAccessory = null;
-                    }
-
-                    item.IsEquipped = false;
-                    Console.WriteLine($"{item.Name}을(를) 해제했습니다.");
-                }
-            }
-        }
-
-        static Player player = new Player { Name = "주인공", Job = "사원" };
-
-        static void ShowStatus()
+        // 아이템 구매 기능
+        public void BuyItem(Player player)
         {
             Console.Clear();
-
-            Console.WriteLine("==== [ 스테이터스 ] ====");
-            Console.WriteLine($"이름   : {player.Name}");
-            Console.WriteLine($"직업   : {player.Job}");
-            Console.WriteLine($"레벨   : {player.Level}");
-            Console.WriteLine($"공격력 : {player.Attack}");
-            Console.WriteLine($"방어력 : {player.Defense}");
-            Console.WriteLine($"체력   : {player.Health}/{player.MaxHealth}");
-            Console.WriteLine($"Gold   : {player.Gold}");
-            Console.WriteLine($"무기   : {player.EquippedWeapon?.Name ?? "없음"}");
-            Console.WriteLine($"방어구 : {player.EquippedArmor?.Name ?? "없음"}");
-            Console.WriteLine($"보조장비: {player.EquippedAccessory?.Name ?? "없음"}"); // 보조장비 표시
-
-            Console.WriteLine("\n선택지로 돌아가려면 아무 키나 누르세요...");
-            Console.ReadKey();
-        }
-
-        /*-----------------------------------------------아이템 클래스 및 인벤토리 관리-------------------------------------------------------------*/
-        enum ItemType { Weapon, Armor, Accessory, Consumable } // 보조장비 유형 추가
-        enum WeaponType { OneHanded, TwoHanded } // 무기 유형 추가 (한손검, 양손검)
-
-        class Item
-        {
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public bool IsEquipped { get; set; } = false;
-            public int Price { get; set; }
-            public ItemType Type { get; set; }
-            public WeaponType WeaponType { get; set; } // 무기 유형
-            public float BonusAttack { get; set; } = 0;
-            public float BonusDefense { get; set; } = 0;
-            public int BonusHealth { get; set; } = 0;
-            public int HealAmount { get; set; } = 0;
-
-            public override string ToString()
+            bool buying = true; // 계속 구매 여부를 위한 플래그
+            while (buying)
             {
-                string equippedIndicator = IsEquipped ? "[E] " : "";
-                string bonusStats = "";
-
-                if (BonusAttack > 0)
-                    bonusStats += $" [공격력 +{BonusAttack}]";
-                if (BonusDefense > 0)
-                    bonusStats += $" [방어력 +{BonusDefense}]";
-                if (BonusHealth > 0)
-                    bonusStats += $" [체력 +{BonusHealth}]";
-
-                return $"{equippedIndicator}{Name}{bonusStats} - {Description}";
-            }
-
-            public string ToSellString()
-            {
-                return $"{Name} - 판매 가격: {(int)(Price * 0.7)} Gold - {Description}";
-            }
-
-            public void UseItem(Player player)
-            {
-                if (Type == ItemType.Consumable && HealAmount > 0)
-                {
-                    int heal = Math.Min(HealAmount, player.MaxHealth - player.Health);
-                    player.Health += heal;
-                    Console.WriteLine($"{Name}을(를) 사용하여 체력을 {heal} 회복했습니다.");
-                }
-            }
-        }
-
-        static List<Item> inventory = new List<Item>
-        {
-            new Item { Name = "회복약", Description = "사용 시 체력을 회복해준다.", Price = 10, Type = ItemType.Consumable, HealAmount = 50 },
-        };
-
-        static void ManageInventory()
-        {
-            bool inManage = true;
-
-            while (inManage)
-            {
-                Console.Clear();
-
-                if (inventory.Count == 0)
-                {
-                    Console.WriteLine("인벤토리가 비어 있습니다.");
-                    Console.WriteLine("0. 나가기");
-                    Console.Write("원하는 행동을 선택하세요: ");
-
-                    string input = Console.ReadLine();
-
-                    if (input == "0")
-                    {
-                        inManage = false;
-                    }
-                    continue;
-                }
-
-                Console.WriteLine("\n=== 인벤토리 ===");
-                for (int i = 0; i < inventory.Count; i++)
-                {
-                    Console.WriteLine($"{i + 1}. {inventory[i]}");
-                }
-                Console.WriteLine("0. 나가기");
-
-                Console.Write("아이템 번호를 선택하세요: ");
-                if (int.TryParse(Console.ReadLine(), out int choice))
-                {
-                    if (choice == 0)
-                    {
-                        inManage = false;
-                    }
-                    else if (choice >= 1 && choice <= inventory.Count)
-                    {
-                        var selectedItem = inventory[choice - 1];
-
-                        if (selectedItem.Type == ItemType.Consumable)
-                        {
-                            if (player.Health < player.MaxHealth)
-                            {
-                                selectedItem.UseItem(player);
-                                inventory.RemoveAt(choice - 1); // 소모품 사용 후 삭제
-                            }
-                            else
-                            {
-                                Console.WriteLine("체력이 가득 차 있어서 회복약을 사용할 수 없습니다.");
-                            }
-                        }
-                        else if (selectedItem.Type == ItemType.Weapon || selectedItem.Type == ItemType.Armor || selectedItem.Type == ItemType.Accessory)
-                        {
-                            // 장착 아이템 처리
-                            if (selectedItem.IsEquipped)
-                            {
-                                player.UnequipItem(selectedItem);
-                            }
-                            else
-                            {
-                                player.EquipItem(selectedItem);
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"{selectedItem.Name}은(는) 장착할 수 없는 아이템입니다.");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("잘못된 입력입니다.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("잘못된 입력입니다.");
-                }
-            }
-        }
-
-        /*-----------------------------------------------상점-------------------------------------------------------------*/
-        class ShopItem : Item
-        {
-            public bool IsPurchased { get; set; } = false;
-
-            public override string ToString()
-            {
-                return IsPurchased ? $"{Name} (구매완료)" : $"{Name} - {Price} Gold - {Description}";
-            }
-        }
-
-        static List<ShopItem> shopItems = new List<ShopItem>
-        {
-            new ShopItem { Name = "한손검", Description = "한 손으로 사용하는 검", Price = 30, Type = ItemType.Weapon, WeaponType = WeaponType.OneHanded, BonusAttack = 5 },
-            new ShopItem { Name = "양손검", Description = "양 손으로 사용하는 강력한 검", Price = 50, Type = ItemType.Weapon, WeaponType = WeaponType.TwoHanded, BonusAttack = 10 },
-            new ShopItem { Name = "방패", Description = "적의 공격을 막을 수 있는 방패", Price = 20, Type = ItemType.Accessory, BonusDefense = 3 },
-            new ShopItem { Name = "갑옷", Description = "방어력을 높여주는 갑옷", Price = 50, Type = ItemType.Armor, BonusDefense = 10, BonusHealth = 20 },
-            new ShopItem { Name = "회복약", Description = "사용 시 체력을 회복", Price = 10, Type = ItemType.Consumable, HealAmount = 50 }
-        };
-
-        static void VisitShop()
-        {
-            bool inShop = true;
-            string statusMessage = "";
-
-            while (inShop)
-            {
-                Console.Clear();
-
-                Console.WriteLine($"현재 보유 골드: {player.Gold} Gold");
-                Console.WriteLine("\n=== 상점 ===");
-
-                for (int i = 0; i < shopItems.Count; i++)
+                Console.WriteLine($"\n[보유 골드]\n{player.Gold} G\n");
+                Console.WriteLine("[아이템 목록]");
+                for (int i = 0; i < shopItems.Length; i++)
                 {
                     Console.WriteLine($"{i + 1}. {shopItems[i]}");
                 }
-                Console.WriteLine("9. 아이템 판매");
-                Console.WriteLine("0. 나가기");
-
-                if (!string.IsNullOrEmpty(statusMessage))
+                Console.Write("\n구매할 아이템 번호를 입력하세요 (0.나가기): ");
+                if (int.TryParse(Console.ReadLine(), out int itemNumber) && itemNumber > 0 && itemNumber <= shopItems.Length)
                 {
-                    Console.WriteLine($"\n{statusMessage}");
-                    statusMessage = "";
-                }
+                    Item selectedItem = shopItems[itemNumber - 1];
 
-                Console.Write("구매할 아이템 번호를 선택하세요: ");
-
-                if (int.TryParse(Console.ReadLine(), out int choice))
-                {
-                    if (choice == 0)
+                    if (selectedItem.IsPurchased)
                     {
-                        inShop = false;
+                        Console.Clear();
+                        Console.WriteLine("이미 구매한 아이템입니다.");
                     }
-                    else if (choice == 9)
+                    else if (player.Gold >= selectedItem.Price)
                     {
-                        SellItem();
-                    }
-                    else if (choice >= 1 && choice <= shopItems.Count)
-                    {
-                        var selectedItem = shopItems[choice - 1];
-                        if (selectedItem.IsPurchased)
-                        {
-                            statusMessage = "이미 구매한 아이템입니다.";
-                        }
-                        else if (player.Gold >= selectedItem.Price)
-                        {
-                            player.Gold -= selectedItem.Price;
-                            selectedItem.IsPurchased = true;
-                            inventory.Add(new Item
-                            {
-                                Name = selectedItem.Name,
-                                Description = selectedItem.Description,
-                                Price = selectedItem.Price,
-                                Type = selectedItem.Type,
-                                WeaponType = selectedItem.WeaponType,
-                                BonusAttack = selectedItem.BonusAttack,
-                                BonusDefense = selectedItem.BonusDefense,
-                                BonusHealth = selectedItem.BonusHealth
-                            });
-                            statusMessage = $"{selectedItem.Name}을(를) 구매했습니다.";
-                        }
-                        else
-                        {
-                            statusMessage = "Gold가 부족합니다.";
-                        }
+                        // 아이템 구매 처리
+                        player.Gold -= selectedItem.Price;
+                        selectedItem.IsPurchased = true;
+                        player.AddItem(selectedItem);
+                        Console.Clear();
+                        Console.WriteLine("구매를 완료했습니다.");
+                        buying = true;
                     }
                     else
                     {
-                        statusMessage = "잘못된 입력입니다.";
+                        Console.Clear();
+                        Console.WriteLine("Gold가 부족합니다.");
+                        buying = true;
                     }
+                }
+                else if (itemNumber == 0)
+                {
+                    buying = false;
                 }
                 else
                 {
-                    statusMessage = "잘못된 입력입니다.";
+                    Console.Clear();
+                    Console.WriteLine("잘못된 입력입니다.");
+                    buying = true;
                 }
             }
         }
 
-        /*-----------------------------------------------아이템 판매-------------------------------------------------------------*/
-        static void SellItem()
+        // 아이템 판매 기능
+        public void SellItem(Player player)
         {
-            bool selling = true;
-            while (selling)
+            Console.Clear();
+            Console.WriteLine("==== [ 판매 가능한 아이템 목록 ] ====");
+
+            // 인벤토리에 판매 가능한 아이템이 있는지 확인
+            if (player.InventoryCount == 0)
             {
-                Console.Clear();
-
-                if (inventory.Count == 0)
+                Console.WriteLine("판매할 아이템이 없습니다.");
+            }
+            else
+            {
+                // 인벤토리의 아이템 출력 (장착된 아이템은 [E] 표시)
+                for (int i = 0; i < player.InventoryCount; i++)
                 {
-                    Console.WriteLine("판매할 아이템이 없습니다.");
-                    return;
+                    string equippedIndicator = player.Inventory[i].IsEquipped ? "[E] " : "";
+                    Console.WriteLine($"{i + 1}. {equippedIndicator}{player.Inventory[i].Name} - {player.Inventory[i].Description}");
                 }
 
-                Console.WriteLine("\n=== 판매 가능한 아이템 ===");
-                for (int i = 0; i < inventory.Count; i++)
+                Console.Write("\n판매할 아이템 번호를 입력하세요 (0. 나가기): ");
+                string input = Console.ReadLine() ?? string.Empty; ;
+                if (int.TryParse(input, out int itemNumber) && itemNumber > 0 && itemNumber <= player.InventoryCount)
                 {
-                    string equippedIndicator = inventory[i].IsEquipped ? "[E] " : "";
-                    Console.WriteLine($"{i + 1}. {equippedIndicator}{inventory[i].ToSellString()}");
-                }
-                Console.WriteLine("0. 판매 종료");
+                    Item selectedItem = player.Inventory[itemNumber - 1];
 
-                Console.Write("판매할 아이템 번호를 선택하세요: ");
-
-                if (int.TryParse(Console.ReadLine(), out int choice) && choice >= 1 && choice <= inventory.Count)
-                {
-                    var selectedItem = inventory[choice - 1];
-
+                    // 장착된 아이템 해제
                     if (selectedItem.IsEquipped)
                     {
-                        Console.WriteLine("장착된 아이템은 판매할 수 없습니다.");
-                        continue;
+                        player.UnequipItem(selectedItem);
                     }
 
+                    // 판매 금액 계산 (85% 가격)
                     int sellPrice = (int)(selectedItem.Price * 0.85);
-
                     player.Gold += sellPrice;
-                    inventory.RemoveAt(choice - 1);
 
-                    Console.WriteLine($"{selectedItem.Name}을(를) {sellPrice} Gold에 판매했습니다.");
+                    // 인벤토리에서 아이템 제거
+                    player.RemoveItem(selectedItem);
+
+                    Console.WriteLine($"{selectedItem.Name}을(를) {sellPrice} G에 판매했습니다.");
                 }
-                else if (choice == 0)
+                else if (itemNumber == 0)
                 {
-                    selling = false;
+                    Console.WriteLine("판매를 취소했습니다.");
                 }
                 else
                 {
@@ -463,5 +480,12 @@ namespace ConsoleApp1
                 }
             }
         }
+    }
+
+    // 아이템 유형 열거형 추가
+    enum ItemType
+    {
+        Weapon,
+        Armor
     }
 }
