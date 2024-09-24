@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Text.Json;
 
 namespace TextRPG
 {
@@ -24,6 +26,9 @@ namespace TextRPG
                 Console.WriteLine("2. 상태 보기");
                 Console.WriteLine("3. 인벤토리");
                 Console.WriteLine("4. 상점");
+                Console.WriteLine("5. 휴식");
+                Console.WriteLine("6. 게임 저장");
+                Console.WriteLine("7. 게임 로드");
                 Console.WriteLine("0. 게임 종료");
                 Console.Write("\n선택지를 입력하세요: ");
 
@@ -43,22 +48,72 @@ namespace TextRPG
                     case "4":
                         VisitShop();
                         break;
+                    case "5":
+                        Rest(); // 휴식 기능 추가
+                        break;
+                    case "6":
+                        SaveSystem.SaveGame(player); // 게임 저장
+                        break;
+                    case "7":
+                        Player? loadedPlayer = SaveSystem.LoadGame(); // 게임 로드
+                        if (loadedPlayer != null) player = loadedPlayer;
+                        break;
                     case "0":
                         Console.WriteLine("게임을 종료합니다.");
                         gameRunning = false;
                         break;
                     default:
-                        Console.WriteLine("잘못된 입력입니다. 다시 시도하세요.");
+                        Console.WriteLine("잘못된 입력입니다.");
                         break;
                 }
             }
+        }
+
+        // 휴식 기능
+        static void Rest()
+        {
+            const int restCost = 500; // 휴식 비용
+
+            Console.Clear();
+            Console.WriteLine($"[보유 골드] {player.Gold} G");
+
+            if (player.Gold >= restCost)
+            {
+                player.Gold -= restCost; // 골드를 차감
+                player.CurrentHealth = player.MaxHealth; // 체력을 최대치로 회복
+                Console.WriteLine("휴식을 완료했습니다. 체력이 100으로 회복되었습니다.");
+            }
+            else
+            {
+                Console.WriteLine("Gold 가 부족합니다.");
+            }
+
+            Console.WriteLine("\n계속하려면 Enter 키를 누르세요...");
+            Console.ReadLine();
         }
 
         // 던전 탐험 선택지
         static void EnterDungeon()
         {
             Console.Clear();
-            Console.WriteLine("던전에 들어갔습니다! 아직 구현 중입니다.");
+            Dungeon dungeon = new Dungeon();
+
+            Console.WriteLine("던전 난이도를 선택하세요.");
+            Console.WriteLine("1. 쉬움");
+            Console.WriteLine("2. 보통");
+            Console.WriteLine("3. 어려움");
+            Console.Write("\n선택지를 입력하세요: ");
+
+            string choice = Console.ReadLine() ?? string.Empty;
+            if (int.TryParse(choice, out int difficulty) && difficulty >= 1 && difficulty <= 3)
+            {
+                dungeon.EnterDungeon(player, difficulty); // 선택한 난이도에 따라 던전 입장
+            }
+            else
+            {
+                Console.WriteLine("잘못된 입력입니다.");
+            }
+
             Console.WriteLine("\n계속하려면 Enter 키를 누르세요...");
             Console.ReadLine();
         }
@@ -73,8 +128,6 @@ namespace TextRPG
             Console.ReadKey(); // 상태 보기에서만 사용
         }
 
-        // 인벤토리 관리 선택지
-        // 인벤토리 관리 선택지
         // 인벤토리 관리 선택지
         static void ManageInventory()
         {
@@ -147,15 +200,12 @@ namespace TextRPG
             }
         }
 
-
-
         // 상점 방문 선택지
         static void VisitShop()
         {
             shop.ShowShop(player); // 상점 출력
         }
     }
-
     // 아이템 클래스
     class Item
     {
@@ -190,11 +240,12 @@ namespace TextRPG
         public string Name { get; set; } // 이름
         public string Job { get; set; }  // 직업
         public int Level { get; set; } = 1; // 기본 레벨
-        public int Attack { get; set; } = 10; // 기본 공격력
-        public int Defense { get; set; } = 5; // 기본 방어력
+        public float Attack { get; set; } = 10; // 기본 공격력 (float로 변경)
+        public float Defense { get; set; } = 5; // 기본 방어력
         public int MaxHealth { get; set; } = 100; // 최대 체력
         public int CurrentHealth { get; set; } = 100; // 현재 체력
         public int Gold { get; set; } = 8000; // 기본 소지금
+        public int DungeonClearCount { get; private set; } = 0; // 던전 클리어 카운트 추가
 
         public Item? EquippedWeapon { get; set; } // 장착된 무기
         public Item? EquippedArmor { get; set; }  // 장착된 방어구
@@ -260,15 +311,15 @@ namespace TextRPG
         }
 
         // 아이템의 효과를 반환하는 메서드
-        private int GetItemEffect(Item item)
+        private float GetItemEffect(Item item)
         {
             if (item.Effect.StartsWith("공격력 +"))
             {
-                return int.Parse(item.Effect.Split('+')[1]);
+                return float.Parse(item.Effect.Split('+')[1]);
             }
             else if (item.Effect.StartsWith("방어력 +"))
             {
-                return int.Parse(item.Effect.Split('+')[1]);
+                return float.Parse(item.Effect.Split('+')[1]);
             }
             return 0;
         }
@@ -306,6 +357,57 @@ namespace TextRPG
             Console.WriteLine($"Gold       : {Gold}");
         }
 
+        // 레벨업 기능
+        public void LevelUp()
+        {
+            switch (Level)
+            {
+                case 1:
+                    if (DungeonClearCount >= 1)
+                    {
+                        Level++;
+                        Attack += 0.5f;
+                        Defense += 1;
+                        Console.WriteLine("레벨 2로 상승! 공격력 +0.5, 방어력 +1");
+                    }
+                    break;
+                case 2:
+                    if (DungeonClearCount >= 3)
+                    {
+                        Level++;
+                        Attack += 0.5f;
+                        Defense += 1;
+                        Console.WriteLine("레벨 3으로 상승! 공격력 +0.5, 방어력 +1");
+                    }
+                    break;
+                case 3:
+                    if (DungeonClearCount >= 6)
+                    {
+                        Level++;
+                        Attack += 0.5f;
+                        Defense += 1;
+                        Console.WriteLine("레벨 4로 상승! 공격력 +0.5, 방어력 +1");
+                    }
+                    break;
+                case 4:
+                    if (DungeonClearCount >= 10)
+                    {
+                        Level++;
+                        Attack += 0.5f;
+                        Defense += 1;
+                        Console.WriteLine("레벨 5로 상승! 공격력 +0.5, 방어력 +1");
+                    }
+                    break;
+            }
+        }
+
+        // 던전 클리어 처리 및 레벨업 호출
+        public void ClearDungeon()
+        {
+            DungeonClearCount++;
+            LevelUp();
+        }
+
         // 인벤토리에서 아이템 제거 함수
         public void RemoveItem(Item item)
         {
@@ -324,6 +426,91 @@ namespace TextRPG
             }
         }
     }
+
+    // 던전 시스템 클래스
+    class Dungeon
+    {
+        // 난이도별 권장 방어력
+        private readonly int[] recommendedDefense = { 5, 10, 15 };
+        private readonly int[] baseRewards = { 1000, 1700, 2500 };
+
+        // 난이도에 따른 던전 클리어 처리
+        public void EnterDungeon(Player player, int difficulty)
+        {
+            Console.Clear();
+            Random rand = new Random();
+            int defenseDifference = (int)player.Defense - recommendedDefense[difficulty - 1];
+            int healthLoss = rand.Next(20, 36) + defenseDifference; // 체력 감소량 계산
+
+            // 방어력 부족 시 40% 확률로 던전 실패
+            if (player.Defense < recommendedDefense[difficulty - 1] && rand.Next(100) < 40)
+            {
+                player.CurrentHealth /= 2; // 체력 절반 감소
+                if (player.CurrentHealth <= 0)
+                {
+                    player.CurrentHealth = 0;
+                    Console.WriteLine("던전 실패! 체력이 0이 되었습니다.");
+                    GameOver(player); // 게임 오버 호출
+                    return;
+                }
+                Console.WriteLine("던전 실패! 체력이 절반으로 감소했습니다.");
+                return;
+            }
+
+            // 던전 클리어 시 체력 감소 반영
+            player.CurrentHealth -= healthLoss;
+            if (player.CurrentHealth <= 0)
+            {
+                player.CurrentHealth = 0;
+                Console.WriteLine($"던전을 클리어했지만 체력이 {healthLoss}만큼 감소하여 0이 되었습니다.");
+                GameOver(player); // 게임 오버 호출
+                return;
+            }
+            Console.WriteLine($"던전을 클리어했습니다! 체력이 {healthLoss}만큼 감소했습니다.");
+
+            // 기본 보상 및 공격력에 따른 추가 보상
+            int baseReward = baseRewards[difficulty - 1];
+            int attackBonus = rand.Next((int)player.Attack, (int)(player.Attack * 2) + 1);
+            int totalReward = baseReward + (baseReward * attackBonus / 100);
+            player.Gold += totalReward;
+            Console.WriteLine($"보상으로 {totalReward} G를 획득했습니다.");
+
+            // 던전 클리어 카운트 증가 및 레벨업 확인
+            player.ClearDungeon();
+        }
+
+        // 게임 오버 처리 함수
+        private void GameOver(Player player)
+        {
+            Console.WriteLine("게임 오버! 체력이 0이 되어 더 이상 진행할 수 없습니다.");
+            Console.WriteLine("1. 게임을 다시 시작합니다.");
+            Console.WriteLine("2. 게임을 로드합니다.");
+            Console.WriteLine("0. 종료합니다.");
+            Console.Write("선택지를 입력하세요: ");
+
+            string choice = Console.ReadLine() ?? string.Empty;
+            switch (choice)
+            {
+                case "1":
+                    player.CurrentHealth = player.MaxHealth; // 체력을 초기화하고 게임을 다시 시작
+                    Console.WriteLine("게임을 다시 시작합니다.");
+                    break;
+                case "2":
+                    Player? loadedPlayer = SaveSystem.LoadGame(); // 저장된 게임을 로드
+                    if (loadedPlayer != null) player = loadedPlayer;
+                    break;
+                case "0":
+                    Console.WriteLine("게임을 종료합니다.");
+                    Environment.Exit(0); // 게임 종료
+                    break;
+                default:
+                    Console.WriteLine("잘못된 입력입니다.");
+                    GameOver(player); // 다시 게임 오버 메뉴로
+                    break;
+            }
+        }
+    }
+
 
     // 상점 클래스
     class Shop
@@ -487,5 +674,49 @@ namespace TextRPG
     {
         Weapon,
         Armor
+    }
+
+    // 저장 시스템 클래스
+    class SaveSystem
+    {
+        private static readonly string saveFilePath = "savegame.json";
+
+        public static void SaveGame(Player player)
+        {
+            try
+            {
+                string json = JsonSerializer.Serialize(player);
+                File.WriteAllText(saveFilePath, json);
+                Console.WriteLine("게임 저장 완료.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"저장 실패: {ex.Message}");
+            }
+        }
+
+        public static Player? LoadGame()
+        {
+            try
+            {
+                if (File.Exists(saveFilePath))
+                {
+                    string json = File.ReadAllText(saveFilePath);
+                    Player loadedPlayer = JsonSerializer.Deserialize<Player>(json);
+                    Console.WriteLine("게임 로드 완료.");
+                    return loadedPlayer;
+                }
+                else
+                {
+                    Console.WriteLine("저장된 게임이 없습니다.");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"로드 실패: {ex.Message}");
+                return null;
+            }
+        }
     }
 }
