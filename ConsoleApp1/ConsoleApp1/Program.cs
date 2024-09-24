@@ -16,7 +16,7 @@ namespace ConsoleApp1
             while (gameRunning)
             {
                 Console.Clear();
-                Console.WriteLine("\n==== 나폴리탄 괴담 RPG ====");
+                Console.WriteLine("\n==== Text RPG ====");
                 Console.WriteLine("1. 스테이터스");
                 Console.WriteLine("2. 인벤토리");
                 Console.WriteLine("3. 상점 가기");
